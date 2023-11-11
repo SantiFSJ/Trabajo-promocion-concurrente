@@ -1,58 +1,80 @@
 package ar.unrn.edu.model;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 
-class Comedor{
+class Comedor {
     private Semaphore semAtenderPedido = new Semaphore(1);
-    private Semaphore semEntregarPedido = new Semaphore(1);
     private Semaphore semRecibirBandeja = new Semaphore(1);
-    private String[] menu = {"Clasico", "Saludable", "Vegetariano"};
-
+    private PriorityBlockingQueue<Pedido> colaPedidos = new PriorityBlockingQueue<>();
     private int nroTicket = 0;
 
-    public void atenderComensal(int numeroComensal) throws InterruptedException {
+    private String[] menu = {"Clasico", "Saludable", "Vegetariano"};
+
+
+    public Pedido atenderComensal(int numeroComensal) throws InterruptedException {
         semAtenderPedido.acquire();
-        System.out.println("Comensal " + numeroComensal + ": Realizando pedido");
-        // Lógica para tomar el pedido y dar el ticket
-        // Simular la toma del pedido asignando un plato aleatorio
+
+        System.out.println("COMENSAL " + numeroComensal + ": REALIZANDO PEDIDO");
         String platoPedido = menu[new Random().nextInt(menu.length)];
-        // Imprimir el ticket
-        System.out.println("Comensal " + numeroComensal + ": Ticket generado - Número: " + generarNumeroTicket() + ", Plato: " + platoPedido);
-        // Lógica para dar el ticket al comensal
-        semAtenderPedido.release();    }
+        int numeroTicket = generarNumeroTicket();
+        Pedido pedido = new Pedido(numeroComensal,numeroTicket, platoPedido);
+        System.out.println("COMENSAL " + numeroComensal + ": NÚMERO DE TICKET: " + numeroTicket + ", MENU ELEGIDO: " + platoPedido);
+        colaPedidos.add(pedido);
+        semAtenderPedido.release();
 
-    public void entregarPedido(int numeroComensal) throws InterruptedException {
-        semEntregarPedido.acquire();
-        System.out.println("Comensal " + numeroComensal + ": Recibiendo pedido");
-        // Simular tiempo de preparación del pedido
-        Thread.sleep(2000);
-        // Lógica para entregar el pedido al comensal
-        System.out.println("Comensal " + numeroComensal + ": Pedido entregado");
-
-        semRecibirBandeja.release();
+        return pedido;
     }
 
-    public void recibirBandeja(int numeroComensal) throws InterruptedException {
+    public void buscarBandeja(Pedido pedido) throws InterruptedException {
+        int numeroTicket = pedido.getNumeroTicket();
+
+        if (!colaPedidos.isEmpty()) {
+            Pedido primerPedidoEnCola = colaPedidos.peek();
+            while(numeroTicket > primerPedidoEnCola.getNumeroTicket()){
+                Thread.sleep(100);
+                primerPedidoEnCola = colaPedidos.peek();
+            }
+        }
+
         semRecibirBandeja.acquire();
-        System.out.println("Empleado: Recibiendo bandeja del Comensal " + numeroComensal);
-        // Lógica para recibir la bandeja del comensal que terminó
-        // Simular tiempo de limpieza o procesamiento de la bandeja
+        colaPedidos.poll();
+        System.out.println("COMENSAL " + pedido.getNumeroComensal() + ": ESTA RECIBIENDO LA BANDEJA - NRO DE TICKET: " + numeroTicket);
+
+        Thread.sleep(2000);
+
+        System.out.println("COMENSAL " + pedido.getNumeroComensal() + ": RECIBIO LA BANDEJA - NRO DE TICKET: " + numeroTicket);
+
+        semRecibirBandeja.release();
+
+    }
+
+
+    public void devolverBandeja(Pedido pedido) throws InterruptedException {
+        semRecibirBandeja.acquire();
+
+        System.out.println("EMPLEADO: ESTA RECIBIENDO LA BANDEJA DEL COMENSAL NRO " + pedido.getNumeroComensal());
         Thread.sleep(1000);
-        System.out.println("Empleado: Bandeja del Comensal " + numeroComensal + " recibida y procesada");
-        semEntregarPedido.release(); // Permitir que la empleada atienda a otro comensal
+        System.out.println("EMPLEADO: LA BANDEJA DEL COMENSAL NRO " + pedido.getNumeroComensal() + " FUE RECIBIDA");
+
         semRecibirBandeja.release();
     }
 
     private int generarNumeroTicket() {
-        // Puedes implementar la lógica para generar números de ticket únicos aquí
-        this.nroTicket += 1;
-        if(this.nroTicket > 999){
-            this.nroTicket = 1;
+        synchronized (this) {
+            this.nroTicket++;
+            if (this.nroTicket > 999) {
+                this.nroTicket = 1;
+            }
+            return this.nroTicket - 1;
         }
-        return this.nroTicket - 1;
     }
 
+    // Resto del código...
 }
 
 

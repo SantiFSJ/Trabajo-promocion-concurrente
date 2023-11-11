@@ -3,8 +3,6 @@ package ar.unrn.edu.model;
 class Comensal implements Runnable {
     private static int contadorComensales = 0;
     private int numeroComensal;
-    private int nroTicket;
-
     private Comedor comedor;
 
     public Comensal(Comedor comedor) {
@@ -12,19 +10,13 @@ class Comensal implements Runnable {
         this.numeroComensal = ++contadorComensales;
     }
 
-    public void setTicket(int nroTicket){
-        this.nroTicket = nroTicket;
-    }
-
     public void run() {
         try {
-            comedor.atenderComensal(numeroComensal);
-            // Simular tiempo de comida
+            Pedido miPedido = comedor.atenderComensal(numeroComensal);
             Thread.sleep(2000);
-            comedor.entregarPedido(numeroComensal);
-            // Simular tiempo después de comer
+            comedor.buscarBandeja(miPedido);
             Thread.sleep(1000);
-            comedor.recibirBandeja(numeroComensal);
+            comedor.devolverBandeja(miPedido);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
