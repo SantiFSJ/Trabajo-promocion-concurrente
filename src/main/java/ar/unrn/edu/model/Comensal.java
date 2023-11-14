@@ -12,7 +12,8 @@ class Comensal implements Runnable {
 
     public void run() {
         try {
-            Pedido miPedido = comedor.atenderComensal(numeroComensal);
+            Pedido miPedido =
+                    comedor.atenderComensal(numeroComensal);
             Thread.sleep(2000);
             comedor.buscarBandeja(miPedido);
             Thread.sleep(1000);
@@ -21,4 +22,6 @@ class Comensal implements Runnable {
             Thread.currentThread().interrupt();
         }
     }
+
+
 }
